@@ -1,0 +1,46 @@
+name: Notify Continuous Discovery Beacon
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed Markdown files
+        id: changed
+        shell: bash
+        run: |
+          git diff --name-only HEAD^ HEAD -- '*.md' > changed_files.txt
+          cat changed_files.txt
+
+      - name: Send events
+        env:
+          BEACON_URL: ${{ secrets.BEACON_URL }}
+          BEACON_TOKEN: ${{ secrets.BEACON_TOKEN }}
+          SITE_ID: logic_evemisslab
+          SITE_ORIGIN: https://logic.evemisslab.com
+        shell: bash
+        run: |
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            # Replace this mapping with the site's real source-file-to-public-URL rule.
+            slug="${file%.md}"
+            slug="${slug#content/}"
+            url="$SITE_ORIGIN/${slug}/"
+            hash="sha256:$(sha256sum "$file" | cut -d' ' -f1)"
+            jq -n \
+              --arg site_id "$SITE_ID" \
+              --arg url "$url" \
+              --arg content_hash "$hash" \
+              '{site_id:$site_id,url:$url,event_type:"updated",content_hash:$content_hash,auto_dispatch:true}' \
+            | curl --fail-with-body -X POST "$BEACON_URL/api/v1/events" \
+                -H "Authorization: Bearer $BEACON_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data-binary @-
+          done < changed_files.txt

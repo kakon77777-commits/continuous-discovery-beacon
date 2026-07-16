@@ -1,0 +1,35 @@
+continuous-discovery-beacon-mvp/
+├── app/
+│   ├── adapters/
+│   │   ├── indexnow.py
+│   │   └── local_artifacts.py
+│   ├── services/
+│   │   ├── dispatcher.py
+│   │   ├── events.py
+│   │   ├── feeds.py
+│   │   └── url_normalizer.py
+│   ├── static/app.css
+│   ├── templates/dashboard.html
+│   ├── config.py
+│   ├── database.py
+│   ├── main.py
+│   ├── models.py
+│   ├── schemas.py
+│   └── security.py
+├── docs/
+│   └── 持續可發現性廣播器_概念與技術設計_v0.1.md
+├── scripts/
+│   ├── bootstrap_demo.py
+│   └── retry_worker.py
+├── tests/
+│   ├── conftest.py
+│   └── test_api.py
+├── .github/workflows/notify-beacon.yml
+├── .env.example
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+├── pyproject.toml
+├── README.md
+├── VALIDATION.md
+└── PROJECT_TREE.txt

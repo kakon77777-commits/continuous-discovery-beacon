@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ settings.app_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">EVEMISSLAB · DISCOVERY INFRASTRUCTURE</p>
+        <h1>Continuous Discovery Beacon</h1>
+        <p>將真實內容變化轉換為可追蹤、可去重、可重試的索引與機器發現訊號。</p>
+      </div>
+      <nav>
+        <a href="/docs">API</a>
+        <a href="/sitemap.xml">Sitemap</a>
+        <a href="/feed.xml">RSS</a>
+        <a href="/changes.jsonl">Changes</a>
+      </nav>
+    </header>
+
+    <section class="stats">
+      <article><strong>{{ counts.sites }}</strong><span>Sites</span></article>
+      <article><strong>{{ counts.pages }}</strong><span>Pages</span></article>
+      <article><strong>{{ counts.events }}</strong><span>Events</span></article>
+      <article><strong>{{ counts.pending }}</strong><span>In flight</span></article>
+      <article><strong>{{ counts.deliveries }}</strong><span>Deliveries</span></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>站點</h2><span>{{ sites|length }} configured</span></div>
+      {% if sites %}
+      <div class="site-grid">
+        {% for site in sites %}
+        <article class="site-card">
+          <div><h3>{{ site.name }}</h3><p>{{ site.base_url }}</p></div>
+          <span class="pill {{ 'ok' if site.enabled else 'muted' }}">{{ 'enabled' if site.enabled else 'disabled' }}</span>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}<p class="empty">尚未建立站點。請先呼叫 <code>POST /api/v1/sites</code>。</p>{% endif %}
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>最近事件</h2><span>latest 30</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>時間</th><th>站點</th><th>事件</th><th>URL</th><th>狀態</th><th>交付</th></tr></thead>
+          <tbody>
+          {% for event in events %}
+            <tr>
+              <td>{{ event.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ event.site_id }}</td>
+              <td><span class="pill type">{{ event.event_type }}</span></td>
+              <td class="url"><a href="{{ event.page.canonical_url }}">{{ event.page.canonical_url }}</a></td>
+              <td><span class="pill {{ 'ok' if event.status == 'completed' else 'warn' }}">{{ event.status }}</span></td>
+              <td>
+                {% for delivery in event.deliveries %}
+                  <span class="delivery">{{ delivery.channel }}:{{ delivery.status }}</span>
+                {% endfor %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="6" class="empty">尚無事件。</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
