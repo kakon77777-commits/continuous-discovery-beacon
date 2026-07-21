@@ -8,7 +8,12 @@ COPY pyproject.toml README.md ./
 COPY app ./app
 RUN pip install --no-cache-dir .
 COPY scripts ./scripts
-RUN mkdir -p /app/data
+RUN groupadd --gid 1000 beacon \
+    && useradd --uid 1000 --gid beacon --system --create-home --shell /usr/sbin/nologin beacon \
+    && mkdir -p /app/data \
+    && chown -R beacon:beacon /app
+
+USER beacon
 
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

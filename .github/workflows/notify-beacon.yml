@@ -22,6 +22,7 @@ jobs:
       - name: Send events
         env:
           BEACON_URL: ${{ secrets.BEACON_URL }}
+          # This site's own submit_token from POST /api/v1/sites, NOT the Beacon admin CDB_API_TOKEN.
           BEACON_TOKEN: ${{ secrets.BEACON_TOKEN }}
           SITE_ID: logic_evemisslab
           SITE_ORIGIN: https://logic.evemisslab.com

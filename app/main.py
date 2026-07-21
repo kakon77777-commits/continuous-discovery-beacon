@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, Response, status
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request, Response, status
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session, selectinload
 from app.config import settings
 from app.database import SessionLocal, get_db, init_database
 from app.models import ChangeEvent, Delivery, EventStatus, Page, Site
-from app.schemas import DispatchResult, EventCreate, EventListItem, EventRead, SiteCreate, SiteRead
-from app.security import require_write_token
+from app.schemas import DispatchResult, EventCreate, EventListItem, EventRead, SiteCreate, SiteCreateResponse, SiteRead
+from app.security import generate_submit_token, hash_submit_token, require_site_submit_token, require_write_token
 from app.services.dispatcher import dispatch_event
 from app.services.events import create_event, serialize_event
 from app.services.feeds import build_changes_jsonl, build_rss, build_sitemap
@@ -51,13 +51,14 @@ def healthz() -> dict[str, str]:
     return {"status": "ok", "version": settings.app_version}
 
 
-@app.post("/api/v1/sites", response_model=SiteRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_write_token)])
-def create_site(payload: SiteCreate, db: Session = Depends(get_db)) -> Site:
+@app.post("/api/v1/sites", response_model=SiteCreateResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_write_token)])
+def create_site(payload: SiteCreate, db: Session = Depends(get_db)) -> SiteCreateResponse:
     if db.get(Site, payload.id):
         raise HTTPException(status_code=409, detail="Site id already exists")
     base_url = normalize_base_url(str(payload.base_url))
     if db.scalar(select(Site).where(Site.base_url == base_url)):
         raise HTTPException(status_code=409, detail="Site base_url already exists")
+    submit_token = generate_submit_token()
     site = Site(
         id=payload.id,
         name=payload.name,
@@ -65,11 +66,12 @@ def create_site(payload: SiteCreate, db: Session = Depends(get_db)) -> Site:
         enabled=payload.enabled,
         indexnow_key=payload.indexnow_key,
         indexnow_key_location=str(payload.indexnow_key_location) if payload.indexnow_key_location else None,
+        submit_token_hash=hash_submit_token(submit_token),
     )
     db.add(site)
     db.commit()
     db.refresh(site)
-    return site
+    return SiteCreateResponse(**SiteRead.model_validate(site).model_dump(), submit_token=submit_token)
 
 
 @app.get("/api/v1/sites", response_model=list[SiteRead])
@@ -77,8 +79,15 @@ def list_sites(db: Session = Depends(get_db)) -> list[Site]:
     return list(db.scalars(select(Site).order_by(Site.name)))
 
 
-@app.post("/api/v1/events", response_model=EventRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_write_token)])
-def post_event(payload: EventCreate, background_tasks: BackgroundTasks, response: Response, db: Session = Depends(get_db)) -> EventRead:
+@app.post("/api/v1/events", response_model=EventRead, status_code=status.HTTP_201_CREATED)
+def post_event(
+    payload: EventCreate,
+    background_tasks: BackgroundTasks,
+    response: Response,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> EventRead:
+    require_site_submit_token(db, payload.site_id, authorization)
     try:
         event, duplicate = create_event(db, payload)
     except LookupError as exc:

@@ -29,6 +29,12 @@ class SiteRead(BaseModel):
     updated_at: datetime
 
 
+class SiteCreateResponse(SiteRead):
+    """Returned only once, at site-creation time. The plaintext token is never stored or shown again."""
+
+    submit_token: str
+
+
 class EventCreate(BaseModel):
     site_id: str
     url: HttpUrl

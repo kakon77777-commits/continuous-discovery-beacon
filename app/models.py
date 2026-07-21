@@ -54,6 +54,7 @@ class Site(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     indexnow_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     indexnow_key_location: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    submit_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
