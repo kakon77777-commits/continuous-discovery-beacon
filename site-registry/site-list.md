@@ -31,6 +31,16 @@
 
 ---
 
+## GitHub Repository 對照
+
+狀態:**剛開始收集,只有以下一筆確認過**——Neo 的 GitHub 專案數量較多,之後會整理過再陸續補上其他站點對應的 repo,今天先不猜其他站點的 repo。
+
+| 站點 | GitHub Repository |
+|---|---|
+| logic.evemisslab.com | https://github.com/kakon77777-commits/unbounded-axiom |
+
+---
+
 ## 下一步
 
 等清單補齊後,依白皮書(`docs/持續可發現性廣播器_概念與技術設計_v0.1.md` §39、CDCP 補充文件 §7.1)定義的 Site Registry 格式,把每個站點整理成：
