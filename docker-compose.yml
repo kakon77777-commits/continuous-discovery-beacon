@@ -9,5 +9,14 @@ services:
       - beacon_data:/app/data
     restart: unless-stopped
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - beacon
+    restart: unless-stopped
+
 volumes:
   beacon_data:
